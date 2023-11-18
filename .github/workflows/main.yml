@@ -19,7 +19,7 @@ jobs:
 
       - name: Install xrdp and configure for root
         run: |
-          # Instala xrdp y realiza la configuración para root
+          # Install xrdp and configure for root
           sudo apt-get update
           sudo apt-get install -y xrdp
           sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
@@ -27,7 +27,7 @@ jobs:
 
       - name: Install ngrok
         run: |
-          # Instala ngrok
+          # Install ngrok
           wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
           unzip ngrok-stable-linux-amd64.zip
           chmod +x ngrok
@@ -35,28 +35,30 @@ jobs:
 
       - name: Start ngrok TCP tunnel
         run: |
-          # Recupera el token de autenticación de ngrok desde los secretos de GitHub
+          # Retrieve ngrok authentication token from GitHub secrets
           NGROK_AUTH_TOKEN=${{ secrets.NGROK_AUTH_TOKEN }}
           ngrok authtoken $NGROK_AUTH_TOKEN
-          ngrok tcp --region eu 3389 &
 
-          # Espera unos segundos para asegurarse de que ngrok esté en funcionamiento
+          # Start ngrok with port 8000 (your application's port) in the EU region
+          ngrok http --region eu 8000 &
+
+          # Wait for a few seconds to ensure ngrok is running
           sleep 5
 
-          # Obtiene la dirección IP pública proporcionada por ngrok
-          public_ip=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+          # Get the public URL provided by ngrok
+          public_url=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 
-          # Muestra la dirección IP pública
-          echo "Public IP Address: $public_ip"
+          # Output the public URL
+          echo "Public URL: $public_url"
 
       - name: Run Docker container
         run: |
-          docker run -d albertlnz/laravel:latest
+          docker run -d -p 8000:8000 albertlnz/laravel:latest
 
       - name: Keep Alive
         run: |
-          # Añade un comando de larga duración para mantener viva la ejecución del flujo de trabajo
+          # Add a long-running command to keep the workflow alive
           while true; do
             echo "Workflow is running..."
-            sleep 5184000  # Duerme durante 1 hora
+            sleep 5184000  # Sleep for 1 hour
           done
